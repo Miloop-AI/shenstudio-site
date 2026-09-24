@@ -10,6 +10,8 @@ The authoritative spec is the handoff doc, not just the code: `docs/shen-studio-
 
 **What's still to do** (launch steps for the real domain, YouTube playlists, pricing page, articles, per-episode pages, maintenance notes) lives in `docs/next-steps.md`; read it at the start of a session and keep it current.
 
+**Git identity:** commit and push as the GitHub account `miloopai` (not `ying2sun`). This repo's local git config already sets `user.name=miloopai`, the no-reply email `309224103+miloopai@users.noreply.github.com` and the credential username; the owner signs `miloopai` into Git Credential Manager themselves. Commits before 2026-09-23 evening are authored as `ying2sun` and are left as they are.
+
 ## Folder layout
 
 - `public/` — the deployable site (Vercel serves this directory; see `vercel.json`): `index.html`, **generated, don't edit by hand** — edit `src/index.template.html` or `scripts/build.mjs` and rebuild. It is committed so Vercel can serve it without running a build.
