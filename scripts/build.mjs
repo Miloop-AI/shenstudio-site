@@ -1,7 +1,7 @@
 // Builds public/index.html from src/index.template.html plus her two public feeds.
 // No dependencies. Run: node scripts/build.mjs   (Vercel runs it on every deploy)
 // If the Podbean feed can't be read the build fails on purpose, so Vercel keeps serving the last good version.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +11,16 @@ const PODCAST_HOME = 'https://chenchenshentv.podbean.com/';
 const YOUTUBE_CHANNEL = 'https://www.youtube.com/@ChenchenShen0416';
 const YOUTUBE_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UC5JU8r6Q8uz__uis5ZxQhBQ';
 const MAX_ITEMS = 12;            // newest item + the rest of the list
+const MAX_TAGS = 6;              // hashtags shown per item
+// Set SITE_URL (e.g. https://example.com) in the Vercel project's environment variables when the real domain goes live.
+// Until then the page tells search engines not to index it, and robots.txt/sitemap.xml/canonical are left out.
+const SITE_URL = (process.env.SITE_URL || '').replace(/\/+$/, '');
+const ASSET_BASE = SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '');
+const SITE_NAME = '大道传媒 Shen Studio';
+const PAGE_TITLE = '大道传媒 Shen Studio｜沈琛琛 · C想一刻';
+const PAGE_DESCRIPTION = '旧金山湾区著名媒体人沈琛琛，立足硅谷，放眼全球。深度时事解析 × 财经干货访谈 × 硅谷前沿科技 × 大健康养生。';
+const SPOTIFY = 'https://open.spotify.com/show/033R7udpl2Dr1qmaoNHATs';
+const APPLE = 'https://podcasts.apple.com/us/podcast/c%E6%83%B3%E4%B8%80%E5%88%BB/id6791887956';
 const SELF_TAGS = new Set(['#C想一刻', '#沈琛琛', '#沈琛琛Cici', '#Cici']);
 
 // ---------- small helpers ----------
@@ -48,7 +58,7 @@ const sameWords = (a, b) => {
   return n >= 4 && [...a.slice(0, n)].filter((ch, i) => ch !== b[i]).length <= 1;
 };
 
-// ---------- tags: first two specific hashtags from the show notes ----------
+// ---------- tags: first few specific hashtags from the show notes ----------
 function pickTags(lines) {
   const found = lines.join(' ').match(/#[^\s#，,。！？、]{2,}/g) || [];
   const chosen = [];
@@ -56,7 +66,7 @@ function pickTags(lines) {
     if (SELF_TAGS.has(t) || /^#\d+$/.test(t)) continue;
     if (chosen.some((c) => c === t || c.includes(t.slice(1)) || t.includes(c.slice(1)) || sameWords(c, t))) continue;
     chosen.push(t);
-    if (chosen.length === 2) break;
+    if (chosen.length === MAX_TAGS) break;
   }
   return chosen;
 }
@@ -103,11 +113,12 @@ function parseYoutube(xml) {
 // ---------- render ----------
 function row(it, lead) {
   const label = it.ep ? `${it.kind} · E${it.ep}` : it.kind;
-  const meta = [it.tags.join(' '), ymd(it.date), it.mins ? `${it.mins} 分钟` : ''].filter(Boolean).join(' · ');
+  const meta = [ymd(it.date), it.mins ? `${it.mins} 分钟` : ''].filter(Boolean).join(' · ');
   return `      <article class="ep${lead ? ' lead' : ''}">
         <div class="eyebrow mono">${esc(label)}</div>
         <h3 class="serif"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a></h3>${it.deck ? `\n        <p class="deck">${esc(it.deck)}</p>` : ''}
-        <div class="meta mono">${esc(meta)}</div>
+        <div class="meta mono">${esc(meta)}</div>${it.tags.length ? `
+        <div class="tags mono">${esc(it.tags.join(' '))}</div>` : ''}
       </article>`;
 }
 
@@ -122,8 +133,42 @@ const items = [...parsePodcast(podXml), ...parseYoutube(ytXml)].sort((a, b) => b
 if (!items.length) throw new Error('No episodes found in the podcast feed; refusing to publish an empty page.');
 const videoCount = items.filter((i) => i.kind === '影片').length;
 
+// ---------- search / sharing metadata ----------
+function seoHead(newest) {
+  const id = (frag) => `${SITE_URL}/#${frag}`;
+  const graph = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'Organization', '@id': id('org'), name: SITE_NAME, ...(SITE_URL && { url: `${SITE_URL}/` }), sameAs: [YOUTUBE_CHANNEL] },
+      { '@type': 'Person', '@id': id('host'), name: '沈琛琛', alternateName: 'Cici Shen', worksFor: { '@id': id('org') }, sameAs: [YOUTUBE_CHANNEL] },
+      { '@type': 'PodcastSeries', name: 'C想一刻', inLanguage: 'zh-Hans', description: PAGE_DESCRIPTION, ...(SITE_URL && { url: `${SITE_URL}/` }),
+        webFeed: PODCAST_FEED, author: { '@id': id('host') }, publisher: { '@id': id('org') }, sameAs: [SPOTIFY, APPLE, PODCAST_HOME] },
+    ],
+  };
+  const meta = (attr, key, val) => `<meta ${attr}="${key}" content="${esc(val)}">`;
+  return [
+    `<title>${esc(PAGE_TITLE)}</title>`,
+    meta('name', 'description', PAGE_DESCRIPTION),
+    SITE_URL ? `<link rel="canonical" href="${esc(SITE_URL)}/">` : '<meta name="robots" content="noindex, nofollow">',
+    '<link rel="icon" type="image/png" href="/favicon.png">',
+    '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
+    meta('property', 'og:type', 'website'),
+    meta('property', 'og:site_name', SITE_NAME),
+    meta('property', 'og:locale', 'zh_CN'),
+    meta('property', 'og:title', PAGE_TITLE),
+    meta('property', 'og:description', PAGE_DESCRIPTION),
+    ...(SITE_URL ? [meta('property', 'og:url', `${SITE_URL}/`)] : []),
+    meta('property', 'og:image', `${ASSET_BASE}/og.jpg`),
+    meta('property', 'og:image:width', '1200'),
+    meta('property', 'og:image:height', '630'),
+    meta('name', 'twitter:card', 'summary_large_image'),
+    `<script type="application/ld+json">${JSON.stringify(graph).replace(/</g, '\\u003c')}</script>`,
+  ].join('\n');
+}
+
 const [latest, ...rest] = items;
 const page = readFileSync(join(ROOT, 'src/index.template.html'), 'utf8')
+  .replaceAll('{{SEO}}', seoHead(latest))
   .replaceAll('{{LOGO}}', inline('assets/brand/logo_horizontal.png', 'image/png'))
   .replaceAll('{{HERO}}', inline('assets/banners/hero_strip.jpg', 'image/jpeg'))
   .replaceAll('{{LATEST}}', row(latest, true))
@@ -133,5 +178,18 @@ const page = readFileSync(join(ROOT, 'src/index.template.html'), 'utf8')
   .replaceAll('{{YT}}', YOUTUBE_CHANNEL);
 
 mkdirSync(join(ROOT, 'public'), { recursive: true });
+if (SITE_URL) {
+  writeFileSync(join(ROOT, 'public/robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  const lastmod = latest.date.toISOString().slice(0, 10);
+  writeFileSync(join(ROOT, 'public/sitemap.xml'), [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    `  <url><loc>${SITE_URL}/</loc><lastmod>${lastmod}</lastmod></url>`,
+    '</urlset>', '',
+  ].join('\n'));
+} else {
+  writeFileSync(join(ROOT, 'public/robots.txt'), 'User-agent: *\nDisallow: /\n');
+  rmSync(join(ROOT, 'public/sitemap.xml'), { force: true });
+}
 writeFileSync(join(ROOT, 'public/index.html'), page);
-console.log(`public/index.html: ${items.length} items (${videoCount} video), newest: E${latest.ep || '-'} ${latest.title}`);
+console.log(`${SITE_URL ? `indexable at ${SITE_URL}` : 'NOT indexable (no SITE_URL)'}; public/index.html: ${items.length} items (${videoCount} video), newest: E${latest.ep || '-'} ${latest.title}`);
