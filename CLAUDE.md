@@ -8,6 +8,8 @@ Marketing site for Shen Studio (大道传媒) — a South Bay Chinese-language m
 
 The authoritative spec is the handoff doc, not just the code: `docs/shen-studio-website-handoff-EN.md` (English) and `docs/大道传媒网站项目交接文档.md` (Chinese) are identical in content — read either one, keep both in sync if either changes. It documents brand/color decisions, content model, information architecture, and a list of decisions still open (CMS choice, real pricing numbers, etc.) — check that "open decisions" section before assuming something is settled.
 
+**What's still to do** (launch steps for the real domain, YouTube playlists, pricing page, articles, per-episode pages, maintenance notes) lives in `docs/next-steps.md`; read it at the start of a session and keep it current.
+
 ## Folder layout
 
 - `public/` — the deployable site (Vercel serves this directory; see `vercel.json`): `index.html`, **generated, don't edit by hand** — edit `src/index.template.html` or `scripts/build.mjs` and rebuild. It is committed so Vercel can serve it without running a build.
