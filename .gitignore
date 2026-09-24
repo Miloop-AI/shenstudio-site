@@ -1,0 +1,8 @@
+# superseded material, kept locally only
+archive/
+# local tool settings
+.claude/
+# Vercel CLI link
+.vercel/
+Thumbs.db
+.DS_Store
