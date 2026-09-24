@@ -111,7 +111,13 @@ function row(it, lead) {
       </article>`;
 }
 
-const [podXml, ytXml] = await Promise.all([get(PODCAST_FEED), get(YOUTUBE_FEED, { optional: true })]);
+// The podcast is the site's core, so a failure there stops the build. YouTube is a bonus: if it is unreachable
+// (blocked, rate-limited) we warn and publish without videos rather than block the whole deploy.
+const ytXml = await get(YOUTUBE_FEED, { optional: true }).catch((err) => {
+  console.warn(`WARNING: could not read the YouTube feed, publishing without videos (${err.message})`);
+  return null;
+});
+const podXml = await get(PODCAST_FEED);
 const items = [...parsePodcast(podXml), ...parseYoutube(ytXml)].sort((a, b) => b.date - a.date).slice(0, MAX_ITEMS);
 if (!items.length) throw new Error('No episodes found in the podcast feed; refusing to publish an empty page.');
 const videoCount = items.filter((i) => i.kind === '影片').length;
