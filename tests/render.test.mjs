@@ -41,10 +41,11 @@ test('renderNav links every show and the fixed sections', () => {
   assert.ok(html.includes('关于沈琛琛'));
 });
 
-test('renderLatest builds a click-to-load player with escaped srcdoc and escaped title', () => {
+test('renderLatest embeds the YouTube player directly (one click plays) with an escaped title', () => {
   const html = renderLatest(latest, model);
-  assert.match(html, /<iframe class="player"[^>]* srcdoc="[^"<]*youtube-nocookie\.com\/embed\/abc\?autoplay=1/);
-  assert.ok(!/srcdoc="[^"]*</.test(html), 'srcdoc attribute contains no raw <');
+  assert.match(html, /<iframe class="player" src="https:\/\/www\.youtube-nocookie\.com\/embed\/abc\?rel=0"/);
+  assert.ok(!html.includes('srcdoc'), 'no click-to-load facade: it needed a second click to play');
+  assert.match(html, /referrerpolicy="strict-origin-when-cross-origin"/);
   assert.ok(html.includes('涨了10倍&lt;不敢卖&gt;&quot;?'));
   assert.ok(html.includes('财经脱口秀 · 第6期'));
   assert.ok(html.includes('第一段 &amp; 更多'));

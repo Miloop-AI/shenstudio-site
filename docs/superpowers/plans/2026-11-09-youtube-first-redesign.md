@@ -1943,3 +1943,7 @@ git push origin main
 Expected: Vercel deploys production from `main`.
 
 - [ ] **Step 7: Run the workflow once by hand with the keepalive box ticked** — ask the owner to open GitHub → the repo → **Actions** → **Rebuild site** → **Run workflow**, tick **Also commit the keepalive timestamp**, **Run workflow**; or with `gh`: `gh workflow run rebuild.yml -f keepalive=true`. Expected: both jobs green, a new commit "Keep the scheduled rebuild alive" on `main`, and a fresh production deployment. Then `git pull` locally.
+
+---
+
+**Outcome note (2026-11-09, Task 11 Step 4):** the `srcdoc` player loaded YouTube without errors, but Chrome blocked autoplay after the first click, so visitors needed a second click on YouTube's own play button. The owner chose a direct embed instead: `renderLatest` now outputs `<iframe class="player" src="https://www.youtube-nocookie.com/embed/<id>?rel=0" …>` and the render test checks for it.

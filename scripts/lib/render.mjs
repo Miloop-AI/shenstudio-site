@@ -18,23 +18,11 @@ export function renderNav(model, config) {
   return links.map(([id, label]) => `<a href="#${esc(id)}">${esc(label)}</a>`).join('\n      ');
 }
 
-// The document inside the player iframe: the thumbnail and a play button; clicking loads the real YouTube player.
-// Its colors are literals because an iframe document cannot read the parent page's CSS variables.
-function playerSrcdoc(v) {
-  const css = '*{margin:0;padding:0}html,body{height:100%;overflow:hidden;background:#0A0E0F}'
-    + 'a{position:absolute;inset:0;display:block}img{width:100%;height:100%;object-fit:cover}'
-    + 'b{position:absolute;left:18px;bottom:18px;width:64px;height:64px;border-radius:50%;background:#C62828;box-shadow:0 6px 20px rgba(10,14,15,.3)}'
-    + 'b::after{content:"";position:absolute;left:25px;top:20px;border-style:solid;border-width:12px 0 12px 19px;border-color:transparent transparent transparent #fff}'
-    + 'a:hover b{background:#A61F1F}'
-    + 'i{position:absolute;right:10px;bottom:10px;padding:1px 6px;border-radius:4px;background:rgba(10,14,15,.78);color:#fff;font:12px/1.5 system-ui,sans-serif;font-style:normal}'
-    + '@media (max-width:560px){b{left:12px;bottom:12px;width:52px;height:52px}b::after{left:20px;top:16px;border-width:10px 0 10px 16px}}';
-  const embed = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}?autoplay=1&rel=0`;
-  return `<meta name="referrer" content="strict-origin-when-cross-origin"><style>${css}</style>`
-    + `<a href="${esc(embed)}" aria-label="播放：${esc(v.title)}"><img src="${esc(v.thumbLarge)}" alt=""><b></b><i>${esc(v.duration)}</i></a>`;
-}
-
+// The newest episode is the real YouTube player, embedded directly so one click plays it. (A click-to-load
+// thumbnail in an iframe srcdoc was tried first: Chrome blocked autoplay after it, so it needed a second click.)
 export function renderLatest(v, model) {
-  return `<iframe class="player" title="${esc(v.title)}" srcdoc="${esc(playerSrcdoc(v))}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  const embed = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}?rel=0`;
+  return `<iframe class="player" src="${esc(embed)}" title="${esc(v.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
   <div class="latest-text">
     <p class="kicker"><span class="tag-new">最新一期</span><span>${esc(v.showName)} · 第${v.ep}期</span></p>
     <h2 class="latest-title">${esc(v.title)}</h2>

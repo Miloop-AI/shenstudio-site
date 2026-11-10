@@ -57,7 +57,9 @@
 
 ## 4. 最新一期在页面内播放
 
-用 `<iframe srcdoc>`：先显示缩图和播放键，点了才载入 YouTube 播放器（自动播放）。不需要 JS，也不会一打开页面就载入整个 YouTube 播放器。在网站上播放也计入 YouTube 的观看数。其他卡片都直接链接到 YouTube。
+直接嵌入 YouTube 播放器（`youtube-nocookie.com` 的 iframe），点一下就播放；在网站上播放也计入 YouTube 的观看数。其他卡片都直接链接到 YouTube。
+
+（2026-11-09 预览时改的：原本用 `<iframe srcdoc>` 先显示缩图、点了才载入播放器，但 Chrome 挡掉自动播放，访客要点两下才开始播。项目负责人选择直接嵌入：打开网页时多载入 YouTube 播放器，换来一下就能播。）
 
 ## 5. 图片
 
