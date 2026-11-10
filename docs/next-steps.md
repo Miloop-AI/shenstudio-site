@@ -7,13 +7,17 @@
 规格：`docs/superpowers/specs/2026-11-09-youtube-first-redesign-design.md`。设计稿（白色版）：https://claude.ai/artifact/4aVdEghGcWXDrGJeQZtr2m
 
 1. **申请 YouTube Data API key**（项目负责人操作）。用自己的 Google 账号即可：网站只读频道的公开资料，不需要创办人的账号。以后要交接，在 Google Cloud 项目里把创办人加为所有者，或换成她账号下的一把 key，网站本身不用改。
-   - 打开 https://console.cloud.google.com/ ，用自己的 Google 账号登录（第一次会要求同意服务条款、选国家）。
-   - 顶部的项目选单 → 新建项目，名称例如 `dadao-website` → 创建，然后切换到这个项目。
-   - 打开 https://console.cloud.google.com/apis/library/youtube.googleapis.com → 启用（Enable）。
-   - 左侧「API 和服务」→「凭证」→「+ 创建凭证」→「API 密钥」，复制显示的密钥。
-   - 点进刚创建的密钥 →「API 限制」选「限制密钥」→ 只勾 YouTube Data API v3 → 保存。「应用限制」保持「无」（Vercel 的服务器 IP 不固定）。
-   - 不需要绑信用卡，也不用开通免费试用。每天有 10,000 单位的免费额度，网站每天用不到 100。
-   - Vercel 项目 → Settings → Environment Variables：新增 `YOUTUBE_API_KEY`，值填那把密钥，勾 Production 和 Preview → Save。
+   - 打开 https://console.cloud.google.com/ ，用自己的 Google 账号登录（第一次会要求同意 Terms of Service、选 Country）。
+   - 顶部的项目选单（**Select a project**）→ **NEW PROJECT**，Project name 例如 `dadao-website` → **CREATE**，然后在项目选单里切换到这个项目。
+   - 打开 https://console.cloud.google.com/apis/library/youtube.googleapis.com （YouTube Data API v3）→ **ENABLE**。
+   - 左侧 **APIs & Services** → **Credentials** → **+ CREATE CREDENTIALS** → **API key**。在 **Create API key** 里：
+     - **Name**：随意，例如 `dadao-website-youtube`。
+     - 如果有 **Authenticate API calls through a service account** 勾选框：不要勾。
+     - **Application restrictions**：**None**（Vercel 的服务器 IP 不固定）。
+     - **API restrictions**：选 **Restrict key**，下拉选单只勾 **YouTube Data API v3**（找不到它表示上一步还没 ENABLE）。
+     - 按 **Create**，在 **API key created** 视窗里复制密钥。之后也能在 Credentials 页点 **Show key** 再看。
+   - 不需要绑信用卡，也不用开 **Free trial**（$300、90 天的赠送额度，开通当天才开始计时，以后需要再开）。YouTube Data API 每天有 10,000 单位的免费额度，网站每天用不到 100。
+   - Vercel 项目 → **Settings** → **Environment Variables**：**Key** 填 `YOUTUBE_API_KEY`，**Value** 填那把密钥，**Environments** 选 **Production** 和 **Preview** → **Save**。
    - 本机测试：在 repo 根目录建一个 `.env.local`，内容一行 `YOUTUBE_API_KEY=那把密钥`。这个文件已列入 `.gitignore`，不会进 git。
    - 密钥外泄的最坏情况是额度被别人用光：到「凭证」页删掉、重建一把，再更新 Vercel 和 `.env.local`。
 2. 项目负责人确认规格文件后开始实作；做完先在 Vercel 预览网址确认，再合并到 `main`。
