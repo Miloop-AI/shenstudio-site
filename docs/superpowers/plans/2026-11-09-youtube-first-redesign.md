@@ -608,7 +608,7 @@ EOF
   channelUrl: "https://www.youtube.com/@dadaomedia",
   subscribeUrl: "https://www.youtube.com/@dadaomedia?sub_confirmation=1",
   latest: Card & { thumbLarge, description } | null,
-  shows: [ { ...showConfig, url, total, cards: Card[] (at most cardsPerShow × rowsPerShow), filler: { span, when, note } | null, airing: { label, value, note } | null } ],
+  shows: [ { ...showConfig, url, total, cards: Card[] (at most cardsPerShow × rowsPerShow), filler: { when, note, ep } | null (a card-sized next-episode tile, only when the last row has a free slot), airing: { label, value, note } | null } ],
   shorts: { ...shortsConfig, url, cards: [ { id, url, title, thumb, views } ] },
 }
 Card = { id, url, title, thumb, duration, date, views, publishedAt, ep, showKey, showName }
@@ -668,11 +668,11 @@ test('episode numbers skip videos that are no longer public; latest is not repea
   const a = m.shows.find((s) => s.key === 'a');
   assert.equal(a.total, 3);
   assert.deepEqual(a.cards.map((c) => [c.id, c.ep]), [['a2', 2], ['a1', 1]]);
-  assert.deepEqual(a.filler, { span: 2, when: '11月13日 周五 18:30', note: '美西时间首播' });
+  assert.deepEqual(a.filler, { when: '11月13日', note: '周五 18:30 · 美西时间', ep: 4 });
   assert.equal(a.url, 'https://www.youtube.com/playlist?list=PA');
 });
 
-test('rows hold up to cardsPerShow × rowsPerShow cards and a filler completes the last row', () => {
+test('rows hold up to cardsPerShow × rowsPerShow cards; a next-episode tile takes a free slot in the last row', () => {
   const many = (n) => {
     const vids = Array.from({ length: n }, (_, i) => v(`m${i}`, new Date(Date.UTC(2026, 9, 1 + i)).toISOString()));
     return { playlists: { PA: vids.map((x) => ({ videoId: x.id, publishedAt: x.publishedAt })), PB: [], PS: [] },
@@ -680,14 +680,17 @@ test('rows hold up to cardsPerShow × rowsPerShow cards and a filler completes t
   };
   const six = buildModel(config, many(6), now).shows[0];     // the newest becomes "latest", 5 left
   assert.equal(six.cards.length, 5);
-  assert.equal(six.filler.span, 3);
+  assert.equal(six.filler.ep, 7);
+  const five = buildModel(config, many(5), now).shows[0];    // 4 left: the first row is full
+  assert.equal(five.cards.length, 4);
+  assert.equal(five.filler, null);
   const nine = buildModel(config, many(9), now).shows[0];    // 8 left: two full rows
   assert.equal(nine.cards.length, 8);
   assert.equal(nine.filler, null);
   const twelve = buildModel(config, many(12), now).shows[0];
   assert.equal(twelve.cards.length, 8);
   assert.equal(twelve.total, 12);
-  assert.equal(buildModel(config, many(6), new Date('2026-11-14T01:00:00Z')).shows[0].filler.when, '今天 18:30');
+  assert.equal(buildModel(config, many(6), new Date('2026-11-14T01:00:00Z')).shows[0].filler.when, '今天');
 });
 
 test('playlist order does not matter: cards are sorted by publish date', () => {
@@ -715,8 +718,8 @@ test('no public show videos means no latest', () => {
   const m = buildModel(config, empty, now);
   assert.equal(m.latest, null);
   assert.equal(m.shows[1].airing, null);
-  assert.equal(m.shows[0].filler.span, 4);
-  assert.deepEqual(m.shows[1].filler, { span: 4, when: '新一期上线，第一时间通知你', note: '订阅频道并打开小铃铛' });
+  assert.equal(m.shows[0].filler.ep, 1);
+  assert.deepEqual(m.shows[1].filler, { when: '敬请期待', note: '订阅频道，上线即通知', ep: 1 });
 });
 ```
 
@@ -784,17 +787,16 @@ function airing(show, now) {
   return newest ? { label: '最新一期', value: newest.date, note: `${show.eyebrow} · 第${newest.ep}期` } : null;
 }
 
-// The card that completes a partly filled last row. Weekly shows name the next air date; others invite a subscription.
+// A card-sized "next episode" tile placed in the first free slot of a partly filled last row (none when the row is full).
+// Weekly shows name the next air date; 硅谷C位 has no fixed day, so it only says 敬请期待.
 function filler(show, perRow, now) {
-  const left = show.cards.length % perRow;
-  const span = show.cards.length === 0 ? perRow : left ? perRow - left : 0;
-  if (!span) return null;
+  if (show.cards.length > 0 && show.cards.length % perRow === 0) return null;
   const sc = show.schedule;
+  const ep = show.total + 1;
   if (sc.type === 'weekly') {
-    const next = nextWeekly(sc.weekday, sc.time, now);
-    return { span, when: next === '今天' ? `今天 ${sc.time}` : `${next} ${sc.label.replace(/^每/, '')} ${sc.time}`, note: '美西时间首播' };
+    return { when: nextWeekly(sc.weekday, sc.time, now), note: `${sc.label.replace(/^每/, '')} ${sc.time} · 美西时间`, ep };
   }
-  return { span, when: '新一期上线，第一时间通知你', note: '订阅频道并打开小铃铛' };
+  return { when: '敬请期待', note: '订阅频道，上线即通知', ep };
 }
 ```
 
@@ -847,7 +849,7 @@ const model = {
       airing: { label: '每周五', value: '18:30', note: '下一期 11月13日 · 美西时间' } },
     { key: 'cwei', name: '硅谷C位', eyebrow: 'AI 与科技访谈', sub: '', url: 'https://www.youtube.com/playlist?list=PB', total: 2,
       cards: [{ ...latest, id: 'w', ep: 2 }, { ...latest, id: 'o', ep: 1 }],
-      filler: { span: 2, when: '新一期上线，第一时间通知你', note: '订阅频道并打开小铃铛' },
+      filler: { when: '敬请期待', note: '订阅频道，上线即通知', ep: 3 },
       airing: { label: '最新一期', value: '11月1日', note: 'AI 与科技访谈 · 第2期' } },
   ],
   shorts: { name: '短视频', eyebrow: '一分钟看懂', url: 'https://www.youtube.com/@dadaomedia/shorts',
@@ -893,14 +895,14 @@ test('renderSchedule shows one cell per show plus the subscribe cell', () => {
   assert.ok(html.includes('订阅并打开小铃铛'));
 });
 
-test('renderShows writes cards, the 全部 link and a filler spanning the empty columns', () => {
+test('renderShows writes cards, the 全部 link and a card-sized next-episode tile', () => {
   const html = renderShows(model);
   assert.ok(html.includes('id="finance"') && html.includes('id="cwei"'));
   assert.ok(html.includes('全部 6 期 →') && html.includes('全部 2 期 →'));
   assert.ok(html.includes('第5期 · 11月6日 · 5,958 次观看'));
-  assert.equal((html.match(/class="next"/g) || []).length, 1);
-  assert.ok(html.includes('style="--span:2"'));
-  assert.ok(html.includes('<p class="next-when">新一期上线，第一时间通知你</p>'));
+  assert.equal((html.match(/class="card card-next"/g) || []).length, 1);
+  assert.ok(html.includes('<span class="next-when">敬请期待</span>'));
+  assert.ok(html.includes('硅谷C位 · 第3期'));
 });
 
 test('renderShorts writes vertical cards and returns nothing when there are none', () => {
@@ -1003,13 +1005,13 @@ function card(c) {
     </a>`;
 }
 
-function filler(f, model) {
-  return `<div class="next" style="--span:${f.span}">
-      <p class="eyebrow">下一期</p>
-      <p class="next-when">${esc(f.when)}</p>
-      <p class="meta">${esc(f.note)}</p>
-      <a class="btn btn-red" href="${esc(model.subscribeUrl)}">订阅，开播提醒</a>
-    </div>`;
+// Same size and structure as a video card, so a partly filled row never shows a large empty box.
+function filler(f, show, model) {
+  return `<a class="card card-next" href="${esc(model.subscribeUrl)}">
+      <span class="thumb next-box"><span class="next-label">下一期</span><span class="next-when">${esc(f.when)}</span><span class="next-note">${esc(f.note)}</span></span>
+      <span class="card-title">订阅，开播提醒 →</span>
+      <span class="card-meta">${esc(show.name)} · 第${f.ep}期</span>
+    </a>`;
 }
 
 export function renderShows(model) {
@@ -1023,7 +1025,7 @@ export function renderShows(model) {
     <a class="more" href="${esc(s.url)}">全部 ${s.total} 期 →</a>` : ''}
   </div>
   <div class="cards">
-    ${[...s.cards.map(card), ...(s.filler ? [filler(s.filler, model)] : [])].join('\n    ')}
+    ${[...s.cards.map(card), ...(s.filler ? [filler(s.filler, s, model)] : [])].join('\n    ')}
   </div>
 </section>`).join('\n\n');
 }
@@ -1386,9 +1388,12 @@ h2{margin:4px 0;font-size:clamp(24px,2.6vw,30px);line-height:1.25;font-weight:70
 .card-title{font-weight:700;font-size:16px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .card-meta{font-size:13px;color:var(--muted)}
 .card:hover .card-title{color:var(--teal)}
-.next{flex:0 0 78%;scroll-snap-align:start;background:var(--soft);border-radius:var(--r-thumb);padding:22px 24px;display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0}
-.next-when{font-size:22px;font-weight:700;line-height:1.3}
-.next .btn{align-self:flex-start;margin-top:8px}
+.next-box{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:12px;text-align:center}
+.next-label{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--teal)}
+.next-when{font-size:clamp(20px,2.2vw,26px);font-weight:700;line-height:1.3;color:var(--ink)}
+.next-note{font-size:13px;color:var(--muted)}
+.card-next .card-title{color:var(--red)}
+.card-next:hover .card-title{color:var(--red-dark)}
 .shorts .card{flex-basis:42%}
 .shorts .thumb{aspect-ratio:9/16}
 .shorts .card-title{font-size:14px}
@@ -1444,7 +1449,6 @@ a.tile:hover{background:var(--tile-hover)}
   .shelf{padding-block:80px 0}
   .shelf-head{margin-bottom:24px}
   .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 20px;overflow:visible;padding-bottom:0;align-items:start}
-  .next{grid-column:span var(--span,2);align-self:stretch}
   .shorts{grid-template-columns:repeat(6,minmax(0,1fr))}
   .about{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:64px;align-items:center;padding-block:104px}
   .host{aspect-ratio:4/5;object-position:center 32%}
@@ -1657,7 +1661,7 @@ for i in range(3): im.crop((1300, i*2070, 1690, (i+1)*2070)).save(f'{d}/phone{i}
   - banner uncut; phone shows the mobile crop.
   - newest episode: thumbnail with red play button bottom-left and duration bottom-right inside the player; kicker 「最新一期 财经脱口秀 · 第N期」; title; 「日期 · 时长 · 播放量」; description; two buttons.
   - schedule strip: 财经脱口秀 「每周五 18:30 · 下一期 …」, 硅谷C位 「最新一期 11月1日 · AI 与科技访谈 · 第2期」, subscribe cell; three equal columns on desktop, stacked on phone.
-  - 财经脱口秀: every public episode except the newest (today 5 cards: 4 + 1) and, in the second row, a 「下一期 · 11月13日 周五 18:30」 filler spanning the rest; 硅谷C位: its cards + a 「新一期上线，第一时间通知你」 filler; no 常驻嘉宾 text; shorts: 6 vertical cards; on phone each row scrolls sideways.
+  - 财经脱口秀: every public episode except the newest (today 5 cards: 4 + 1), then a card-sized 「下一期 / 11月13日 / 周五 18:30 · 美西时间」 tile (「订阅，开播提醒 →」, 「财经脱口秀 · 第7期」); 硅谷C位: its cards + a 「下一期 / 敬请期待」 tile; tiles are exactly as big as video cards; no 常驻嘉宾 text; shorts: 6 vertical cards; on phone each row scrolls sideways.
   - about: photo cropped (not a full-length tall image), text, stats, button.
   - teal band: heading, mail pill, 6 tiles (3×2 desktop, 2×3 phone), footer with white logo; no white gap between band and footer.
   - nothing overflows horizontally; no broken image icons.
@@ -1813,7 +1817,7 @@ The design spec for the current site is `docs/superpowers/specs/2026-11-09-youtu
 - **Schedule wording:** 《财经脱口秀》 shows 「每周五 18:30 · 下一期 <date> · 美西时间」 (date computed; 「今天 18:30 上线」 on the day). 《硅谷C位》 has no fixed day: never write a frequency for it, not even 「不定期更新」 (the founder finds it unprofessional); it shows 「最新一期 <date> · AI 与科技访谈 · 第N期」.
 - The newest episode is the newest public video across the show playlists and is not repeated in its show's row. Episode numbers are the order of public videos in the playlist by publish date. All dates are Pacific time.
 - Titles show only the part before the first ｜ or |, without hashtags. There is no guest byline: titles name guests inconsistently.
-- Each show gets up to two rows of 4 cards (newest episode excluded; older ones are reached through 「全部 N 期 →」). A partly filled last row is completed by one 「下一期」 card: for 财经脱口秀 it names the next air date (「11月13日 周五 18:30」), for 硅谷C位 it only invites a subscription. (Owner, 2026-11-09: with one row, 财经脱口秀 第1期 was pushed out and looked "not synced".)
+- Each show gets up to two rows of 4 cards (newest episode excluded; older ones are reached through 「全部 N 期 →」). When the last row has a free slot, the first one holds a card-sized 「下一期」 tile (thumbnail area: 下一期 + date + time; below: 「订阅，开播提醒 →」 and 「栏目 · 第N期」): 财经脱口秀 shows the next air date, 硅谷C位 shows 「敬请期待」. (Owner, 2026-11-09: with one row, 财经脱口秀 第1期 was pushed out and looked "not synced"; a tile stretched over the rest of the row looked too empty.)
 - The line under the 财经脱口秀 heading has no guest names for now (owner, 2026-11-09).
 - **Brand:** 大道传媒 (Shen Studio) everywhere. The banner (「大道 / 看清大趋势 过好小日子 / 来自硅谷的财经·科技·商业洞察」) is used untouched; don't retouch or re-lay-out it. When she changes it, download the new one (`=s0` gives the 2048×1152 original), re-cut the strip and mobile strip and the share image as in plan Task 6.
 - **Updated automatically:** videos, titles, thumbnails, view counts, which show a video belongs to, Shorts, the next 财经脱口秀 date, the newest 硅谷C位 date. **Edited by hand in `src/site.json`:** the collaboration email (a temporary Gmail until she gets a professional address), platform accounts (小红书 / 视频号 / 抖音 have no links yet), about text, show descriptions.
