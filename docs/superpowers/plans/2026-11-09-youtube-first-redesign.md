@@ -233,7 +233,7 @@ EOF
 - Consumes: nothing.
 - Produces:
   - `validateConfig(config: object): object` — returns the same object or throws `Error("src/site.json: …")`.
-  - The `src/site.json` shape used by every later task (keys: `siteName, tagline, description, host{name, alternateName}, channel{id, handle, title}, shows[{key, playlistId, name, eyebrow, sub, schedule}], shorts{playlistId, name, eyebrow}, cardsPerShow, shortsCount, email, about{eyebrow, heading, paragraphs[], stats[{value,label}]}, collab{eyebrow, heading, text}, platforms[{name, handle, url?, icon, wide?}]`). `schedule` is `{type:"weekly", weekday, time, label}` or `{type:"latest"}`.
+  - The `src/site.json` shape used by every later task (keys: `siteName, tagline, description, host{name, alternateName}, channel{id, handle, title}, shows[{key, playlistId, name, eyebrow, sub, schedule}], shorts{playlistId, name, eyebrow}, cardsPerShow (cards per row, 4), rowsPerShow (2), shortsCount, email, about{eyebrow, heading, paragraphs[], stats[{value,label}]}, collab{eyebrow, heading, text}, platforms[{name, handle, url?, icon, wide?}]`). `schedule` is `{type:"weekly", weekday, time, label}` or `{type:"latest"}`.
 
 - [ ] **Step 1: Write the failing tests** — create `tests/config.test.mjs`:
 
@@ -294,7 +294,7 @@ Expected: FAIL — `Cannot find module` (or ENOENT for `src/site.json`).
       "playlistId": "PLe2uCBU6vnTA",
       "name": "财经脱口秀",
       "eyebrow": "北美财经干货 · 每周五更新",
-      "sub": "退休精算 · 资产配置 · 财商突破　｜　常驻嘉宾 Frank Ho、Shannon Wang 博士",
+      "sub": "退休精算 · 资产配置 · 财商突破",
       "schedule": { "type": "weekly", "weekday": 5, "time": "18:30", "label": "每周五" }
     },
     {
@@ -308,6 +308,7 @@ Expected: FAIL — `Cannot find module` (or ENOENT for `src/site.json`).
   ],
   "shorts": { "playlistId": "PLFhYsSJNdwHs", "name": "短视频", "eyebrow": "一分钟看懂" },
   "cardsPerShow": 4,
+  "rowsPerShow": 2,
   "shortsCount": 6,
   "email": "chenchenshentv@gmail.com",
   "about": {
@@ -368,6 +369,7 @@ export function validateConfig(c) {
   }
   need(c.shorts?.playlistId && c.shorts?.name, '"shorts.playlistId" and "shorts.name" are required');
   need(Number.isInteger(c.cardsPerShow) && c.cardsPerShow > 0, '"cardsPerShow" must be a positive whole number');
+  need(Number.isInteger(c.rowsPerShow) && c.rowsPerShow > 0, '"rowsPerShow" must be a positive whole number');
   need(Number.isInteger(c.shortsCount) && c.shortsCount > 0, '"shortsCount" must be a positive whole number');
   need(c.about?.heading && Array.isArray(c.about?.paragraphs), '"about.heading" and "about.paragraphs" are required');
   need(c.collab?.heading, '"collab.heading" is required');
@@ -606,7 +608,7 @@ EOF
   channelUrl: "https://www.youtube.com/@dadaomedia",
   subscribeUrl: "https://www.youtube.com/@dadaomedia?sub_confirmation=1",
   latest: Card & { thumbLarge, description } | null,
-  shows: [ { ...showConfig, url, total, cards: Card[], fillerSpan: number, airing: { label, value, note } | null } ],
+  shows: [ { ...showConfig, url, total, cards: Card[] (at most cardsPerShow × rowsPerShow), filler: { span, when, note } | null, airing: { label, value, note } | null } ],
   shorts: { ...shortsConfig, url, cards: [ { id, url, title, thumb, views } ] },
 }
 Card = { id, url, title, thumb, duration, date, views, publishedAt, ep, showKey, showName }
@@ -627,6 +629,7 @@ const config = {
   ],
   shorts: { playlistId: 'PS', name: '短视频', eyebrow: '一分钟看懂' },
   cardsPerShow: 4,
+  rowsPerShow: 2,
   shortsCount: 2,
 };
 const v = (id, publishedAt) => ({ id, title: `${id} 标题｜沈琛琛`, description: `${id} 第一段\n\n第二段`, publishedAt,
@@ -665,8 +668,26 @@ test('episode numbers skip videos that are no longer public; latest is not repea
   const a = m.shows.find((s) => s.key === 'a');
   assert.equal(a.total, 3);
   assert.deepEqual(a.cards.map((c) => [c.id, c.ep]), [['a2', 2], ['a1', 1]]);
-  assert.equal(a.fillerSpan, 2);
+  assert.deepEqual(a.filler, { span: 2, when: '11月13日 周五 18:30', note: '美西时间首播' });
   assert.equal(a.url, 'https://www.youtube.com/playlist?list=PA');
+});
+
+test('rows hold up to cardsPerShow × rowsPerShow cards and a filler completes the last row', () => {
+  const many = (n) => {
+    const vids = Array.from({ length: n }, (_, i) => v(`m${i}`, new Date(Date.UTC(2026, 9, 1 + i)).toISOString()));
+    return { playlists: { PA: vids.map((x) => ({ videoId: x.id, publishedAt: x.publishedAt })), PB: [], PS: [] },
+      videos: Object.fromEntries(vids.map((x) => [x.id, x])) };
+  };
+  const six = buildModel(config, many(6), now).shows[0];     // the newest becomes "latest", 5 left
+  assert.equal(six.cards.length, 5);
+  assert.equal(six.filler.span, 3);
+  const nine = buildModel(config, many(9), now).shows[0];    // 8 left: two full rows
+  assert.equal(nine.cards.length, 8);
+  assert.equal(nine.filler, null);
+  const twelve = buildModel(config, many(12), now).shows[0];
+  assert.equal(twelve.cards.length, 8);
+  assert.equal(twelve.total, 12);
+  assert.equal(buildModel(config, many(6), new Date('2026-11-14T01:00:00Z')).shows[0].filler.when, '今天 18:30');
 });
 
 test('playlist order does not matter: cards are sorted by publish date', () => {
@@ -694,14 +715,15 @@ test('no public show videos means no latest', () => {
   const m = buildModel(config, empty, now);
   assert.equal(m.latest, null);
   assert.equal(m.shows[1].airing, null);
-  assert.equal(m.shows[0].fillerSpan, 4);
+  assert.equal(m.shows[0].filler.span, 4);
+  assert.deepEqual(m.shows[1].filler, { span: 4, when: '新一期上线，第一时间通知你', note: '订阅频道并打开小铃铛' });
 });
 ```
 
 - [ ] **Step 2: Run the tests and watch them fail**
 
 Run: `node --test tests/model.test.mjs`
-Expected: FAIL — `Cannot find module '.../scripts/lib/model.mjs'`.
+Expected: FAIL — `Cannot find module '.../scripts/lib/model.mjs'`. (The suite has 7 tests.)
 
 - [ ] **Step 3: Implement** — create `scripts/lib/model.mjs`:
 
@@ -738,8 +760,8 @@ export function buildModel(config, data, now = new Date()) {
 
   for (const s of shows) {
     s.airing = airing(s, now);
-    s.cards = s.all.filter((c) => !latest || c.id !== latest.id).slice(0, config.cardsPerShow);
-    s.fillerSpan = Math.max(0, config.cardsPerShow - s.cards.length);
+    s.cards = s.all.filter((c) => !latest || c.id !== latest.id).slice(0, config.cardsPerShow * config.rowsPerShow);
+    s.filler = filler(s, config.cardsPerShow, now);
     delete s.all;
   }
 
@@ -761,12 +783,25 @@ function airing(show, now) {
   const newest = show.all[0];
   return newest ? { label: '最新一期', value: newest.date, note: `${show.eyebrow} · 第${newest.ep}期` } : null;
 }
+
+// The card that completes a partly filled last row. Weekly shows name the next air date; others invite a subscription.
+function filler(show, perRow, now) {
+  const left = show.cards.length % perRow;
+  const span = show.cards.length === 0 ? perRow : left ? perRow - left : 0;
+  if (!span) return null;
+  const sc = show.schedule;
+  if (sc.type === 'weekly') {
+    const next = nextWeekly(sc.weekday, sc.time, now);
+    return { span, when: next === '今天' ? `今天 ${sc.time}` : `${next} ${sc.label.replace(/^每/, '')} ${sc.time}`, note: '美西时间首播' };
+  }
+  return { span, when: '新一期上线，第一时间通知你', note: '订阅频道并打开小铃铛' };
+}
 ```
 
 - [ ] **Step 4: Run the tests and watch them pass**
 
 Run: `node --test tests/model.test.mjs`
-Expected: all 6 tests PASS.
+Expected: all 7 tests PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -808,10 +843,11 @@ const model = {
   latest,
   shows: [
     { key: 'finance', name: '财经脱口秀', eyebrow: '北美财经干货', sub: '退休精算', url: 'https://www.youtube.com/playlist?list=PA', total: 6,
-      cards: [{ ...latest, id: 'k', url: 'https://www.youtube.com/watch?v=k', title: '401k', ep: 5 }], fillerSpan: 0,
+      cards: [{ ...latest, id: 'k', url: 'https://www.youtube.com/watch?v=k', title: '401k', ep: 5 }], filler: null,
       airing: { label: '每周五', value: '18:30', note: '下一期 11月13日 · 美西时间' } },
     { key: 'cwei', name: '硅谷C位', eyebrow: 'AI 与科技访谈', sub: '', url: 'https://www.youtube.com/playlist?list=PB', total: 2,
-      cards: [{ ...latest, id: 'w', ep: 2 }, { ...latest, id: 'o', ep: 1 }], fillerSpan: 2,
+      cards: [{ ...latest, id: 'w', ep: 2 }, { ...latest, id: 'o', ep: 1 }],
+      filler: { span: 2, when: '新一期上线，第一时间通知你', note: '订阅频道并打开小铃铛' },
       airing: { label: '最新一期', value: '11月1日', note: 'AI 与科技访谈 · 第2期' } },
   ],
   shorts: { name: '短视频', eyebrow: '一分钟看懂', url: 'https://www.youtube.com/@dadaomedia/shorts',
@@ -864,6 +900,7 @@ test('renderShows writes cards, the 全部 link and a filler spanning the empty 
   assert.ok(html.includes('第5期 · 11月6日 · 5,958 次观看'));
   assert.equal((html.match(/class="next"/g) || []).length, 1);
   assert.ok(html.includes('style="--span:2"'));
+  assert.ok(html.includes('<p class="next-when">新一期上线，第一时间通知你</p>'));
 });
 
 test('renderShorts writes vertical cards and returns nothing when there are none', () => {
@@ -966,11 +1003,11 @@ function card(c) {
     </a>`;
 }
 
-function filler(span, model) {
-  return `<div class="next" style="--span:${span}">
+function filler(f, model) {
+  return `<div class="next" style="--span:${f.span}">
       <p class="eyebrow">下一期</p>
-      <p class="next-when">新一期上线，第一时间通知你</p>
-      <p class="meta">订阅频道并打开小铃铛</p>
+      <p class="next-when">${esc(f.when)}</p>
+      <p class="meta">${esc(f.note)}</p>
       <a class="btn btn-red" href="${esc(model.subscribeUrl)}">订阅，开播提醒</a>
     </div>`;
 }
@@ -986,7 +1023,7 @@ export function renderShows(model) {
     <a class="more" href="${esc(s.url)}">全部 ${s.total} 期 →</a>` : ''}
   </div>
   <div class="cards">
-    ${[...s.cards.map(card), ...(s.fillerSpan ? [filler(s.fillerSpan, model)] : [])].join('\n    ')}
+    ${[...s.cards.map(card), ...(s.filler ? [filler(s.filler, model)] : [])].join('\n    ')}
   </div>
 </section>`).join('\n\n');
 }
@@ -1565,7 +1602,7 @@ Expected: one line like `NOT indexable (no SITE_URL); …/index.html (… KB): l
 - [ ] **Step 5: Run the integration test and the whole suite**
 
 Run: `node --test "tests/*.test.mjs"`
-Expected: every suite passes (format 6, config 5, youtube 4, model 6, render 10, build 1).
+Expected: every suite passes (format 6, config 5, youtube 4, model 7, render 10, build 1).
 
 - [ ] **Step 6: Build the real site into `public/`**
 
@@ -1620,7 +1657,7 @@ for i in range(3): im.crop((1300, i*2070, 1690, (i+1)*2070)).save(f'{d}/phone{i}
   - banner uncut; phone shows the mobile crop.
   - newest episode: thumbnail with red play button bottom-left and duration bottom-right inside the player; kicker 「最新一期 财经脱口秀 · 第N期」; title; 「日期 · 时长 · 播放量」; description; two buttons.
   - schedule strip: 财经脱口秀 「每周五 18:30 · 下一期 …」, 硅谷C位 「最新一期 11月1日 · AI 与科技访谈 · 第2期」, subscribe cell; three equal columns on desktop, stacked on phone.
-  - 财经脱口秀 row: 4 cards; 硅谷C位 row: its cards + the 「下一期」 filler filling the rest of the row; shorts: 6 vertical cards; on phone each row scrolls sideways.
+  - 财经脱口秀: every public episode except the newest (today 5 cards: 4 + 1) and, in the second row, a 「下一期 · 11月13日 周五 18:30」 filler spanning the rest; 硅谷C位: its cards + a 「新一期上线，第一时间通知你」 filler; no 常驻嘉宾 text; shorts: 6 vertical cards; on phone each row scrolls sideways.
   - about: photo cropped (not a full-length tall image), text, stats, button.
   - teal band: heading, mail pill, 6 tiles (3×2 desktop, 2×3 phone), footer with white logo; no white gap between band and footer.
   - nothing overflows horizontally; no broken image icons.
@@ -1765,7 +1802,7 @@ The design spec for the current site is `docs/superpowers/specs/2026-11-09-youtu
 - **API key:** a Google Cloud project under the project owner's Google account, key restricted to YouTube Data API v3, no billing. Stored as the Vercel environment variable `YOUTUBE_API_KEY` (Production and Preview) and in `.env.local`. To rotate: Google Cloud → APIs & Services → Credentials, create a new key, update both places, delete the old key.
 - Colors are CSS custom properties on `:root` (`--bg`, `--ink`, `--ink-2`, `--muted`, `--line`, `--soft`, `--teal`, `--teal-deep`, `--on-teal`, `--on-teal-soft`, `--red`, `--red-dark`, `--on-red`, `--overlay`, `--on-overlay`, `--tile*`) — always change the variable, never hardcode a color. White page and ink text; red `#C62828` (the banner's tag) only for watch/subscribe buttons and the 「最新一期」 dot; deep teal `#083B49` (the banner's background) for the closing band and footer; `#0B4A5A` for eyebrows. The only literal colors are inside the player iframe's `srcdoc` CSS, which cannot read the page's variables.
 - **No JavaScript in the page.** The newest episode plays in place through an `<iframe srcdoc>` that shows the thumbnail and a play button and loads the YouTube player (`youtube-nocookie.com`, autoplay) only on click. The phone nav is a horizontally scrolling row; card rows scroll sideways on phones (CSS scroll-snap).
-- Responsive breakpoint is `820px`, mobile first (`@media (min-width:820px)` holds the desktop rules). The desktop show rows assume `cardsPerShow` = 4 (`repeat(4, …)` in the CSS); change both together.
+- Responsive breakpoint is `820px`, mobile first (`@media (min-width:820px)` holds the desktop rules). The desktop show rows assume `cardsPerShow` (cards per row) = 4 (`repeat(4, …)` in the CSS); change both together. `rowsPerShow` (2) only limits how many cards a show gets.
 - **Images:** logo, banners and host photo are inlined as base64 data URIs (a past version referenced the logo by relative path and it silently failed to render outside its folder). Video thumbnails are hotlinked from `i.ytimg.com` (the API's `standard` size for cards and Shorts, `maxres` for the newest episode); inlining 20+ thumbnails would add over 1 MB. Shorts reuse the 16:9 thumbnail cropped to 9:16 with `object-fit`, because it holds the same cover frame.
 - When publishing a page as a shareable Claude Artifact preview, transform it into an Artifact fragment first (strip `<!DOCTYPE>`/`<html>`/`<head>`/`<body>`, keep `<title>` + `<style>` + body content; images must be data URIs or published files). This is unrelated to Vercel deploys.
 
@@ -1776,7 +1813,8 @@ The design spec for the current site is `docs/superpowers/specs/2026-11-09-youtu
 - **Schedule wording:** 《财经脱口秀》 shows 「每周五 18:30 · 下一期 <date> · 美西时间」 (date computed; 「今天 18:30 上线」 on the day). 《硅谷C位》 has no fixed day: never write a frequency for it, not even 「不定期更新」 (the founder finds it unprofessional); it shows 「最新一期 <date> · AI 与科技访谈 · 第N期」.
 - The newest episode is the newest public video across the show playlists and is not repeated in its show's row. Episode numbers are the order of public videos in the playlist by publish date. All dates are Pacific time.
 - Titles show only the part before the first ｜ or |, without hashtags. There is no guest byline: titles name guests inconsistently.
-- A show row with fewer than 4 cards is completed by one 「下一期 · 订阅，开播提醒」 card (no date).
+- Each show gets up to two rows of 4 cards (newest episode excluded; older ones are reached through 「全部 N 期 →」). A partly filled last row is completed by one 「下一期」 card: for 财经脱口秀 it names the next air date (「11月13日 周五 18:30」), for 硅谷C位 it only invites a subscription. (Owner, 2026-11-09: with one row, 财经脱口秀 第1期 was pushed out and looked "not synced".)
+- The line under the 财经脱口秀 heading has no guest names for now (owner, 2026-11-09).
 - **Brand:** 大道传媒 (Shen Studio) everywhere. The banner (「大道 / 看清大趋势 过好小日子 / 来自硅谷的财经·科技·商业洞察」) is used untouched; don't retouch or re-lay-out it. When she changes it, download the new one (`=s0` gives the 2048×1152 original), re-cut the strip and mobile strip and the share image as in plan Task 6.
 - **Updated automatically:** videos, titles, thumbnails, view counts, which show a video belongs to, Shorts, the next 财经脱口秀 date, the newest 硅谷C位 date. **Edited by hand in `src/site.json`:** the collaboration email (a temporary Gmail until she gets a professional address), platform accounts (小红书 / 视频号 / 抖音 have no links yet), about text, show descriptions.
 - **Podcast:** Podbean is no longer read. The podcast appears only as the Apple Podcasts and Spotify tiles.
