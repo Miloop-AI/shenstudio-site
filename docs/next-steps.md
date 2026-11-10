@@ -39,7 +39,8 @@
 2. **打开收录**：已完成。Vercel 环境变量 `SITE_URL=https://shenstudio.tv`（**Config** 类型，只设 Production；2026-11-10 从 www 改过来）。上线检查：canonical 为 `https://shenstudio.tv/`、没有 noindex，`/robots.txt` 允许收录并指向 sitemap，`/sitemap.xml` 已生成。预览版没有 `SITE_URL`，仍然不收录。
    - 在 Vercel 网页上按 **Redeploy**、或查看 / 修改环境变量的值，会要求输入寄到 shenstudio.ai@gmail.com 的验证码（由项目负责人输入）。只想重新部署时，到 GitHub → **Actions** → **Rebuild site** → **Run workflow** 不需要验证码。
 3. **验证**：把 `https://shenstudio.tv` 贴到微信 / WhatsApp 确认分享卡片显示正常。
-4. **提交给 Google**：暂时不做（项目负责人 2026-11-10 决定，需要时再说）。届时到 Google Search Console 添加网站，提交 `https://shenstudio.tv/sitemap.xml`；用 Domain 方式验证要在 Namecheap 加一条 TXT 记录。
+4. **Google Search Console：已完成（2026-11-10，项目负责人操作）。** 用 shenstudio.ai@gmail.com 建了 **Domain** 类型的资源 `shenstudio.tv`（验证方式是 Namecheap 上的一条 `google-site-verification=…` TXT 记录，不要删）；sitemap 提交的是完整网址 `https://shenstudio.tv/sitemap.xml`（Domain 类型必须填完整网址，只填 `sitemap.xml` 会报 Invalid sitemap address），状态 **Success**。
+   - 以后把创办人加进来：用 shenstudio.ai@gmail.com 登入 Search Console → **Settings** → **Users and permissions** → **ADD USER**，填她的 Google 账号，权限选 **Owner**。她的新公司邮箱如果不是 Gmail，也可以先用它注册一个 Google 账号再加。
 5. **上线前检查**：
    - Vercel 免费的 Hobby 方案限非商业用途，这是公司的营销网站，考虑升级 Pro。
    - Vercel 账户与 GitHub 仓库目前在项目负责人名下，之后想把所有权交给创办人，可以把 GitHub 仓库和 Vercel 项目转移过去。
