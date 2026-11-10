@@ -1,0 +1,52 @@
+{
+  "siteName": "大道传媒 Shen Studio",
+  "tagline": "来自硅谷的财经·科技·商业洞察",
+  "description": "沈琛琛 Cici Shen 的 YouTube 频道「大道」：来自硅谷的财经·科技·商业洞察。每周五《财经脱口秀》，以及 AI 与科技访谈《硅谷C位》。",
+  "host": { "name": "沈琛琛", "alternateName": "Cici Shen" },
+  "channel": { "id": "UC5JU8r6Q8uz__uis5ZxQhBQ", "handle": "@dadaomedia", "title": "沈琛琛-大道传媒" },
+  "shows": [
+    {
+      "key": "finance",
+      "playlistId": "PLe2uCBU6vnTA",
+      "name": "财经脱口秀",
+      "eyebrow": "北美财经干货 · 每周五更新",
+      "sub": "退休精算 · 资产配置 · 财商突破",
+      "schedule": { "type": "weekly", "weekday": 5, "time": "18:30", "label": "每周五" }
+    },
+    {
+      "key": "cwei",
+      "playlistId": "PLESHS0LcVZv8",
+      "name": "硅谷C位",
+      "eyebrow": "AI 与科技访谈",
+      "sub": "前沿技术 · 商业落地 · 创投趋势",
+      "schedule": { "type": "latest" }
+    }
+  ],
+  "shorts": { "playlistId": "PLFhYsSJNdwHs", "name": "短视频", "eyebrow": "一分钟看懂" },
+  "cardsPerShow": 4,
+  "rowsPerShow": 2,
+  "shortsCount": 6,
+  "email": "chenchenshentv@gmail.com",
+  "about": {
+    "eyebrow": "关于主持人",
+    "heading": "看清大趋势，过好小日子",
+    "paragraphs": [
+      "Hi，我是沈琛琛 Cici Shen。我在中美两地有 15 年电视与电台主持经验，毕业于上海戏剧学院主持专业、旧金山艺术大学导演硕士，目前在硅谷媒体创业。",
+      "取名「大道」，源于大道至简。复杂的局势、硬核的 AI 与财经，都应该被深入浅出地讲明白。我会常邀硅谷科技大佬、财经专家，带来一手的趋势分析。"
+    ],
+    "stats": [
+      { "value": "15 年", "label": "中美电视与电台主持" },
+      { "value": "千集", "label": "评论节目" },
+      { "value": "百位", "label": "大咖专访" }
+    ]
+  },
+  "collab": { "eyebrow": "商务合作", "heading": "品牌合作 · 嘉宾邀约", "text": "节目赞助、品牌合作与嘉宾邀约，欢迎来信。" },
+  "platforms": [
+    { "name": "YouTube", "handle": "@dadaomedia", "url": "https://www.youtube.com/@dadaomedia", "icon": "youtube" },
+    { "name": "Apple Podcasts", "handle": "沈琛琛｜大道传媒", "url": "https://podcasts.apple.com/us/podcast/id6791887956", "icon": "applepodcasts" },
+    { "name": "Spotify", "handle": "沈琛琛｜大道传媒", "url": "https://open.spotify.com/show/033R7udpl2Dr1qmaoNHATs", "icon": "spotify" },
+    { "name": "小红书", "handle": "沈琛琛cici", "icon": "xiaohongshu", "wide": true },
+    { "name": "视频号", "handle": "沈琛琛cici", "icon": "wechat" },
+    { "name": "抖音", "handle": "沈琛琛Cici", "icon": "tiktok" }
+  ]
+}
