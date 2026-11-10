@@ -14,6 +14,23 @@ The design spec for the current site is `docs/superpowers/specs/2026-11-09-youtu
 
 **Console instructions:** when telling the owner what to click in Google Cloud, Vercel, GitHub, AWS and the like, quote the English UI labels.
 
+## Commands
+
+```bash
+node --test "tests/*.test.mjs"                                        # all tests (no network needed)
+node --test tests/model.test.mjs                                      # one suite
+node --test --test-name-pattern="nextWeekly" tests/format.test.mjs    # one test
+node scripts/build.mjs                                                # live data (needs .env.local) -> fallback/index.html, public/robots.txt
+node scripts/build.mjs --fixture tests/fixtures/channel.json          # offline, from recorded API data
+node scripts/build.mjs --save-fixture tests/fixtures/channel.json --out "$(mktemp -d)"   # refresh the fixture
+```
+
+No linter or formatter is configured. There is no `vercel dev` here: to try the live function locally, import `api/home.mjs` and call its default export with a fake `res` that has `setHeader`, `status` and `send` (as `tests/handler.test.mjs` does); it reads `.env.local` only if you call `process.loadEnvFile('.env.local')` first.
+
+## How a page gets made
+
+`src/site.json` → `scripts/lib/youtube.mjs` `fetchChannelData` (the configured playlists, public videos only) → `model.mjs` `buildModel` (newest episode, show rows, episode numbers, schedule lines, next-episode tile) → `render.mjs` HTML fragments → `page.mjs` `renderPage` fills `src/index.template.html`. Two callers: `api/home.mjs` on every CDN cache miss (through `handler.mjs`, which adds the cache headers and the fallback), and `scripts/build.mjs` at deploy time (writes the fallback page, robots, sitemap). Everything except the API fetch and the file reads in `page.mjs` is pure, so the tests run offline against `tests/fixtures/channel.json`.
+
 ## Folder layout
 
 - `api/home.mjs` — the Vercel Function behind `/` (`vercel.json` rewrites `/` to it and bundles the files it reads via `includeFiles`). The handler logic and cache headers are in `scripts/lib/handler.mjs`.
@@ -33,7 +50,7 @@ The design spec for the current site is `docs/superpowers/specs/2026-11-09-youtu
 
 ## Working with the site
 
-- **Build locally:** needs `YOUTUBE_API_KEY`; put `YOUTUBE_API_KEY=...` in `.env.local` at the repo root (gitignored; the build loads it). `node scripts/build.mjs` writes `fallback/index.html` (open it to preview) and `public/robots.txt`. Offline layout work: `node scripts/build.mjs --fixture tests/fixtures/channel.json`. Refresh the fixture: `node scripts/build.mjs --save-fixture tests/fixtures/channel.json --out <temp dir>`. Tests: `node --test "tests/*.test.mjs"`.
+- **Local setup:** put `YOUTUBE_API_KEY=...` in `.env.local` at the repo root (gitignored; the build loads it). Open `fallback/index.html` to preview. The committed `public/robots.txt` is rewritten by every build, so on Vercel Production (where `SITE_URL` is set) it allows indexing whatever the committed copy says.
 - **How fresh the page is:** `/` is rendered by `api/home.mjs` and cached by Vercel's CDN with `s-maxage=600, stale-while-revalidate=60`, so a new video appears within about 10 minutes for any visitor. If the live render fails (API error, quota used up), the function serves `fallback/index.html` with `s-maxage=60` and logs the error (Vercel → the project → **Logs**). Each render costs about 4 API units; the CDN cache is per region.
 - **Automation:** `vercel.json` sets `buildCommand` to `node scripts/build.mjs`, so every deploy refreshes the fallback page. `.github/workflows/rebuild.yml` pings a Vercel Deploy Hook (secret `VERCEL_DEPLOY_HOOK`) every 3 hours (GitHub actually runs it every 8–13 h) to keep the fallback recent, and on the 1st of each month commits a timestamp to `.github/keepalive` so GitHub never pauses the schedule. A missing key, an API error or zero public show videos fails the build; Vercel keeps the last good deployment. Redeploying from the Vercel dashboard asks for an email code sent to shenstudio.ai@gmail.com; GitHub → **Actions** → **Rebuild site** → **Run workflow** redeploys without it.
 - **API key:** a Google Cloud project under the project owner's Google account, key restricted to YouTube Data API v3, no billing. Stored as the Vercel environment variable `YOUTUBE_API_KEY` (Production and Preview) and in `.env.local`. To rotate: Google Cloud → APIs & Services → Credentials, create a new key, update both places, delete the old key.
