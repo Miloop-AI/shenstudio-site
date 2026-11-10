@@ -1,6 +1,15 @@
 # Shen Studio (大道传媒) Website Handoff
 
-Last updated: August 2026
+Last updated: November 2026
+
+## 0. November 2026 redesign: YouTube first (read this first)
+
+On 2026-11-08 the founder decided the website should push her YouTube channel, and the site was rebuilt around it (spec: `docs/superpowers/specs/2026-11-09-youtube-first-redesign-design.md`; the old podcast-first site is tagged `v1-podcast-site` in git).
+
+- The channel is now 「沈琛琛-大道传媒」, handle `@dadaomedia`. Two shows, each one of her playlists: 《财经脱口秀》 (Fridays 18:30 Pacific) and 《硅谷C位》 (AI and tech interviews, no fixed day), plus Shorts.
+- Layout: white page, the official logo, her new banner, the newest episode playable in the page, a schedule strip, up to two rows of thumbnails per show, Shorts, about the host, then a deep-teal band with the collaboration email, her platform accounts and the footer.
+- Content comes from the YouTube Data API (YouTube's RSS feeds stopped working); Podbean is no longer read. The site rebuilds every 3 hours with no manual step.
+- This replaces section 2's palette and its "one image slot" principle, sections 4–6, and the parts of sections 11–13 that describe the podcast-first page. Background, design references, the article backend question, pricing and the legal notes still apply.
 
 ## 1. Project background
 
