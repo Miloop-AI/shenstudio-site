@@ -1,8 +1,8 @@
 # 大道传媒网站：后续事项
 
-最后更新：2026-11-09。目前状态：YouTube 优先的新版已在分支 `youtube-redesign` 做好（规格与计划见 `docs/superpowers/`），等预览确认后合并到 `main`。合并之前线上仍是旧版（git 标签 `v1-podcast-site`）。网域尚未连接，网站设为「不让搜索引擎收录」。
+最后更新：2026-11-10。目前状态：YouTube 优先的新版已上线（2026-11-09 合并到 `main`），正式网址 **https://www.shenstudio.tv**（`shenstudio.tv` 会转到 www，见下方「正式上线」第 1 条），`https://shenstudio-site.vercel.app` 也是同一个网站。搜索引擎收录已打开。旧版在 git 标签 `v1-podcast-site`。
 
-## 改版：YouTube 优先（进行中，分支 `youtube-redesign`）
+## 改版：YouTube 优先（已上线）
 
 规格：`docs/superpowers/specs/2026-11-09-youtube-first-redesign-design.md`。设计稿（白色版）：https://claude.ai/artifact/4aVdEghGcWXDrGJeQZtr2m
 
@@ -20,20 +20,24 @@
    - Vercel 项目 → **Settings** → **Environment Variables**：**Key** 填 `YOUTUBE_API_KEY`，**Value** 填那把密钥，**Environments** 选 **Production** 和 **Preview** → **Save**。
    - 本机测试：在 repo 根目录建一个 `.env.local`，内容一行 `YOUTUBE_API_KEY=那把密钥`。这个文件已列入 `.gitignore`，不会进 git。
    - 密钥外泄的最坏情况是额度被别人用光：到「凭证」页删掉、重建一把，再更新 Vercel 和 `.env.local`。
-2. 实作已完成（分支 `youtube-redesign`）。下一步：推到 GitHub，在 Vercel 预览网址确认（特别是点最新一期能在页面内播放），再合并到 `main`。
+2. 实作已完成并上线（2026-11-09）：预览版在项目负责人的 Chrome 里点过，最新一期直接嵌入 YouTube 播放器，点一下就播；之后合并到 `main`，手动跑过一次 Rebuild site（含每月保活），两项都成功。
 3. 合作邮箱暂用 `chenchenshentv@gmail.com`，创办人会申请一个更正式的，拿到后改设定档。
 4. （可选）小红书、抖音的主页链接。目前网站上只放账号名称。
 5. 只有 YouTube 内容自动同步（2026-11-09 确认）；邮箱、各平台账号、简介都是手动更新。
 
-## 等创办人内容齐全后要做（正式上线）
+## 正式上线（网域 shenstudio.tv）
 
-1. **连接网域**（Namecheap 由项目负责人自己操作，Claude 不代输密码）
-   - Vercel 项目 → Settings → Domains → 添加网域，Vercel 会列出要填的 DNS 记录（通常是一条 A 记录和一条 CNAME，以 Vercel 页面显示的为准）。
-   - 到 Namecheap → Domain List → Manage → Advanced DNS，照抄那几条记录，等生效。
-2. **打开收录**：Vercel 项目 → Settings → Environment Variables，新增 `SITE_URL`，值填 `https://她的网域`（Production 环境），然后重新部署（Deployments → 最新一笔 → Redeploy；或到 GitHub Actions 手动跑一次 Rebuild site）。
-   - 之后网站会自动加上 canonical、og:url、`sitemap.xml`，`robots.txt` 改为允许收录，并拿掉 noindex。
-3. **验证**：网页源码里能看到 canonical；打开 `/robots.txt`、`/sitemap.xml`；把网址贴到微信 / WhatsApp 确认分享卡片显示正常。
-4. **提交给 Google**：到 Google Search Console 添加网站（网域验证要在 Namecheap 加一条 TXT 记录），提交 `sitemap.xml`。
+网域在 Namecheap（账号 cici0416），网址主机是 Vercel 团队「ShenStudio」的项目 `shenstudio-site`。主网址用 **www.shenstudio.tv**（Vercel 推荐），`shenstudio.tv` 308 转到 www。
+
+1. **连接网域**
+   - 已完成（2026-11-09）：Vercel → **Settings** → **Domains** 加了 `shenstudio.tv`（转到 www）和 `www.shenstudio.tv`（Production）；Namecheap → **Advanced DNS** 的 `www` CNAME 改为 `a0c271f10c5bf3b5.vercel-dns-017.com.`，`https://www.shenstudio.tv` 已经是新网站（HTTPS）。
+   - **还差一步（项目负责人操作）**：Namecheap → **Domain List** → shenstudio.tv **MANAGE** → **Advanced DNS** → **HOST RECORDS**，点 `@` 那一行（目前是 **URL Redirect Record**），**Type** 改成 **A Record**，**Value** 填 `216.198.79.1`，**TTL** 用 Automatic，按绿色 ✓ 保存。Claude 改这一笔时被权限系统挡下。改好之前，`shenstudio.tv`（不带 www）解析不到。
+   - 不要动 **MAIL SETTINGS**（Private Email）：那是这个网域的邮箱设定，跟网站无关。
+   - 改好后：Vercel **Domains** 页按 **Refresh**，两个网域都应显示 **Valid Configuration**；打开 `https://shenstudio.tv` 应自动跳到 `https://www.shenstudio.tv`。
+2. **打开收录**：已完成（2026-11-09）。Vercel 环境变量 `SITE_URL=https://www.shenstudio.tv`（**Config** 类型，只设 Production），已重新部署。网页有 canonical、没有 noindex，`/robots.txt` 允许收录，`/sitemap.xml` 已生成。预览版没有 `SITE_URL`，仍然不收录。
+   - 在 Vercel 网页上按 **Redeploy** 会要求寄验证码到 shenstudio.ai@gmail.com 验证身份；不想收验证码时，到 GitHub → **Actions** → **Rebuild site** → **Run workflow** 也能重新部署。
+3. **验证**：把 `https://www.shenstudio.tv` 贴到微信 / WhatsApp 确认分享卡片显示正常。
+4. **提交给 Google**：到 Google Search Console 添加网站，提交 `https://www.shenstudio.tv/sitemap.xml`。用 Domain 方式验证要在 Namecheap 加一条 TXT 记录（Search Console 会给值）。需要决定用谁的 Google 账号。
 5. **上线前检查**：
    - Vercel 免费的 Hobby 方案限非商业用途，这是公司的营销网站，考虑升级 Pro。
    - Vercel 账户与 GitHub 仓库目前在项目负责人名下，之后想把所有权交给创办人，可以把 GitHub 仓库和 Vercel 项目转移过去。
