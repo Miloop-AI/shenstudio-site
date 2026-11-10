@@ -1,6 +1,6 @@
 # 大道传媒网站：后续事项
 
-最后更新：2026-11-10。目前状态：YouTube 优先的新版已上线（2026-11-09 合并到 `main`），正式网址 **https://www.shenstudio.tv**（`shenstudio.tv` 会转到 www，见下方「正式上线」第 1 条），`https://shenstudio-site.vercel.app` 也是同一个网站。搜索引擎收录已打开。旧版在 git 标签 `v1-podcast-site`。
+最后更新：2026-11-10。目前状态：YouTube 优先的新版已上线（2026-11-09 合并到 `main`），正式网址 **https://www.shenstudio.tv**（`shenstudio.tv` 会自动转到 www），`https://shenstudio-site.vercel.app` 也是同一个网站。搜索引擎收录已打开。旧版在 git 标签 `v1-podcast-site`。
 
 ## 改版：YouTube 优先（已上线）
 
@@ -31,9 +31,8 @@
 
 1. **连接网域**
    - 已完成（2026-11-09）：Vercel → **Settings** → **Domains** 加了 `shenstudio.tv`（转到 www）和 `www.shenstudio.tv`（Production）；Namecheap → **Advanced DNS** 的 `www` CNAME 改为 `a0c271f10c5bf3b5.vercel-dns-017.com.`，`https://www.shenstudio.tv` 已经是新网站（HTTPS）。
-   - **还差一步（项目负责人操作）**：Namecheap → **Domain List** → shenstudio.tv **MANAGE** → **Advanced DNS** → **HOST RECORDS**，点 `@` 那一行（目前是 **URL Redirect Record**），**Type** 改成 **A Record**，**Value** 填 `216.198.79.1`，**TTL** 用 Automatic，按绿色 ✓ 保存。Claude 改这一笔时被权限系统挡下。改好之前，`shenstudio.tv`（不带 www）解析不到。
+   - `@` 记录：项目负责人把 **URL Redirect Record** 改成 **A Record** `216.198.79.1`（2026-11-10；Claude 改这一笔时被权限系统挡下）。Vercel 两个网域都已通过、SSL 证书已签发，`https://shenstudio.tv` 308 转到 `https://www.shenstudio.tv/`。
    - 不要动 **MAIL SETTINGS**（Private Email）：那是这个网域的邮箱设定，跟网站无关。
-   - 改好后：Vercel **Domains** 页按 **Refresh**，两个网域都应显示 **Valid Configuration**；打开 `https://shenstudio.tv` 应自动跳到 `https://www.shenstudio.tv`。
 2. **打开收录**：已完成（2026-11-09）。Vercel 环境变量 `SITE_URL=https://www.shenstudio.tv`（**Config** 类型，只设 Production），已重新部署。网页有 canonical、没有 noindex，`/robots.txt` 允许收录，`/sitemap.xml` 已生成。预览版没有 `SITE_URL`，仍然不收录。
    - 在 Vercel 网页上按 **Redeploy** 会要求寄验证码到 shenstudio.ai@gmail.com 验证身份；不想收验证码时，到 GitHub → **Actions** → **Rebuild site** → **Run workflow** 也能重新部署。
 3. **验证**：把 `https://www.shenstudio.tv` 贴到微信 / WhatsApp 确认分享卡片显示正常。
