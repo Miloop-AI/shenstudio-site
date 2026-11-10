@@ -7,3 +7,5 @@ archive/
 Thumbs.db
 .DS_Store
 dist/
+# local secrets (YouTube API key for test builds)
+.env.local

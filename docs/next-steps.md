@@ -1,6 +1,25 @@
 # 大道传媒网站：后续事项
 
-最后更新：2026-09-23。目前状态：网站已上线在 Vercel 的临时网址，内容自动从 Podbean / YouTube 更新，网域尚未连接，网站设为「不让搜索引擎收录」，等创办人内容齐全再对外。
+最后更新：2026-11-09。目前状态：网站正在改版成 YouTube 优先（见下一节）。线上仍是旧版（git 标签 `v1-podcast-site` 有备份）：Podcast 部分照常从 Podbean 更新，YouTube 部分已失效（频道改名为 `@dadaomedia`，YouTube RSS 已关闭）。网域尚未连接，网站设为「不让搜索引擎收录」。
+
+## 改版：YouTube 优先（进行中，分支 `youtube-redesign`）
+
+规格：`docs/superpowers/specs/2026-11-09-youtube-first-redesign-design.md`。设计稿（白色版）：https://claude.ai/artifact/4aVdEghGcWXDrGJeQZtr2m
+
+1. **申请 YouTube Data API key**（项目负责人操作）。用自己的 Google 账号即可：网站只读频道的公开资料，不需要创办人的账号。以后要交接，在 Google Cloud 项目里把创办人加为所有者，或换成她账号下的一把 key，网站本身不用改。
+   - 打开 https://console.cloud.google.com/ ，用自己的 Google 账号登录（第一次会要求同意服务条款、选国家）。
+   - 顶部的项目选单 → 新建项目，名称例如 `dadao-website` → 创建，然后切换到这个项目。
+   - 打开 https://console.cloud.google.com/apis/library/youtube.googleapis.com → 启用（Enable）。
+   - 左侧「API 和服务」→「凭证」→「+ 创建凭证」→「API 密钥」，复制显示的密钥。
+   - 点进刚创建的密钥 →「API 限制」选「限制密钥」→ 只勾 YouTube Data API v3 → 保存。「应用限制」保持「无」（Vercel 的服务器 IP 不固定）。
+   - 不需要绑信用卡，也不用开通免费试用。每天有 10,000 单位的免费额度，网站每天用不到 100。
+   - Vercel 项目 → Settings → Environment Variables：新增 `YOUTUBE_API_KEY`，值填那把密钥，勾 Production 和 Preview → Save。
+   - 本机测试：在 repo 根目录建一个 `.env.local`，内容一行 `YOUTUBE_API_KEY=那把密钥`。这个文件已列入 `.gitignore`，不会进 git。
+   - 密钥外泄的最坏情况是额度被别人用光：到「凭证」页删掉、重建一把，再更新 Vercel 和 `.env.local`。
+2. 项目负责人确认规格文件后开始实作；做完先在 Vercel 预览网址确认，再合并到 `main`。
+3. 合作邮箱暂用 `chenchenshentv@gmail.com`，创办人会申请一个更正式的，拿到后改设定档。
+4. （可选）小红书、抖音的主页链接。目前网站上只放账号名称。
+5. 只有 YouTube 内容自动同步（2026-11-09 确认）；邮箱、各平台账号、简介都是手动更新。
 
 ## 等创办人内容齐全后要做（正式上线）
 
@@ -14,13 +33,12 @@
 5. **上线前检查**：
    - Vercel 免费的 Hobby 方案限非商业用途，这是公司的营销网站，考虑升级 Pro。
    - Vercel 账户与 GitHub 仓库目前在项目负责人名下，之后想把所有权交给创办人，可以把 GitHub 仓库和 Vercel 项目转移过去。
-   - 页脚的 IG、FB 目前只是文字，没有链接：向创办人要账号链接，没有就删掉。
-   - 有没有正式的联络邮箱要放在网站上。
+   - 页脚的 IG、FB：改版后换成小红书 / 视频号 / 抖音 / 播客（见上方改版一节）。
+   - 正式合作邮箱：见上方改版一节第 3 条。
 
 ## 内容 / 功能，尚未决定或尚未开始
 
-- **YouTube 两个 playlist**：创办人的频道有两个播放列表，版面还没决定。需要：两个 playlist 的链接和名称；决定是分区显示还是混在同一个列表里用小标签区分。YouTube 每个 playlist 有自己的 RSS（`feeds/videos.xml?playlist_id=`），技术上不难。
-- **第一支影片上线后验证**：影片会自动出现在列表里（目前 0 支，这条路径还没实测过）。若没出现，检查 `scripts/build.mjs` 里的 `parseYoutube` 和 YouTube feed 是否可读。
+- **YouTube 播放列表 / 第一支影片**：由改版处理（栏目＝她自己的播放列表）。旧做法用的 YouTube RSS 已全面失效，改版改用 YouTube Data API。
 - **价目表**：已放在 `parked/pricing.html`（没有导览入口，不部署）。等创办人确定真实报价和联络邮箱再做；恢复方法写在 `CLAUDE.md`。上线前还需要：商业实体与 Stripe 账户、隐私权政策（CCPA）、合作条款、FTC 赞助内容声明（详见 handoff 第九节）。
 - **文章栏位**：已移除，等写作后台（CMS）决定后再加。CMS 二选一：Sanity + Next.js，或 Ghost（handoff 第七节）。
 - **每一集在本站的独立页面**（可选，SEO）：现在每集标题都连到 Podbean，搜索某一集内容时排名会落在 Podbean。做独立页面（简介全文加 Podbean 播放器）能让网站自己有可被搜索到的内容。因为页面本来就由 feed 生成，技术上做得到，属于较大的改动。
