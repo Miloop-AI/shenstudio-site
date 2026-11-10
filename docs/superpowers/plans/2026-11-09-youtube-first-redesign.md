@@ -32,7 +32,7 @@
 | `scripts/lib/format.mjs` (new) | Pure text helpers: clean titles, first paragraph, durations, view counts, Pacific dates, next weekly air date |
 | `scripts/lib/config.mjs` (new) | `validateConfig()` for `src/site.json` |
 | `scripts/lib/youtube.mjs` (new) | YouTube Data API client: playlist items (paged, public only), video details (batched), `fetchChannelData()` |
-| `scripts/lib/model.mjs` (new) | `buildModel()`: latest episode, per-show cards, episode numbers, filler span, schedule lines, shorts |
+| `scripts/lib/model.mjs` (new) | `buildModel()`: latest episode, per-show cards, episode numbers, next-episode tile, schedule lines, shorts |
 | `scripts/lib/render.mjs` (new) | HTML fragments + `seoHead()` + `fillTemplate()` |
 | `scripts/build.mjs` (rewrite) | Orchestration, CLI flags, `.env.local`, robots/sitemap, writes `public/index.html` |
 | `src/site.json` (new) | Hand-edited settings: shows, shorts, email, platforms, about text, page description |
@@ -1121,7 +1121,7 @@ export function seoHead(config, { siteUrl = '', assetBase = '' } = {}) {
 - [ ] **Step 4: Run the tests and watch them pass**
 
 Run: `node --test tests/render.test.mjs`
-Expected: all 10 tests PASS. (The `seoHead` sameAs assertion uses the test config's single platform with a URL.)
+Expected: all 9 tests PASS. (The `seoHead` sameAs assertion uses the test config's single platform with a URL.)
 
 - [ ] **Step 5: Commit**
 
@@ -1606,7 +1606,7 @@ Expected: one line like `NOT indexable (no SITE_URL); …/index.html (… KB): l
 - [ ] **Step 5: Run the integration test and the whole suite**
 
 Run: `node --test "tests/*.test.mjs"`
-Expected: every suite passes (format 6, config 5, youtube 4, model 7, render 10, build 1).
+Expected: every suite passes (format 6, config 5, youtube 4, model 7, render 9, build 1).
 
 - [ ] **Step 6: Build the real site into `public/`**
 
