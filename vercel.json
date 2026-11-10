@@ -1,5 +1,11 @@
 {
   "buildCommand": "node scripts/build.mjs",
   "outputDirectory": "public",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [{ "source": "/", "destination": "/api/home" }],
+  "functions": {
+    "api/home.mjs": {
+      "includeFiles": "{src/**,fallback/**,assets/brand/logo_horizontal.png,assets/brand/logo_horizontal_white.png,assets/banners/hero_strip.jpg,assets/banners/hero_strip_mobile.jpg,assets/photos/host_about.jpg}"
+    }
+  }
 }
