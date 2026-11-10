@@ -9,3 +9,5 @@ Thumbs.db
 dist/
 # local secrets (YouTube API key for test builds)
 .env.local
+# deploy-time copy of the homepage (api/home.mjs serves it if YouTube cannot be read)
+fallback/
