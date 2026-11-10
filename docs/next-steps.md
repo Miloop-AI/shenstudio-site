@@ -1,6 +1,6 @@
 # 大道传媒网站：后续事项
 
-最后更新：2026-11-10。目前状态：YouTube 优先的新版已上线（2026-11-09 合并到 `main`），正式网址 **https://www.shenstudio.tv**（`shenstudio.tv` 会自动转到 www），`https://shenstudio-site.vercel.app` 也是同一个网站。搜索引擎收录已打开。旧版在 git 标签 `v1-podcast-site`。
+最后更新：2026-11-10。目前状态：YouTube 优先的新版已上线，正式网址 **https://shenstudio.tv**（`www.shenstudio.tv` 会自动转过来），`https://shenstudio-site.vercel.app` 也是同一个网站。首页在访客打开时生成、缓存 10 分钟，她发片后约 10 分钟内就会显示。网页标题「大道传媒 Shen Studio｜沈琛琛」。搜索引擎收录已打开。旧版在 git 标签 `v1-podcast-site`。
 
 ## 改版：YouTube 优先（已上线）
 
@@ -22,21 +22,24 @@
    - 密钥外泄的最坏情况是额度被别人用光：到「凭证」页删掉、重建一把，再更新 Vercel 和 `.env.local`。
 2. 实作已完成并上线（2026-11-09）：预览版在项目负责人的 Chrome 里点过，最新一期直接嵌入 YouTube 播放器，点一下就播；之后合并到 `main`，手动跑过一次 Rebuild site（含每月保活），两项都成功。
 3. 合作邮箱暂用 `chenchenshentv@gmail.com`，创办人会申请一个更正式的，拿到后改设定档。
-4. （可选）小红书、抖音的主页链接。目前网站上只放账号名称。
+4. （可选）小红书、抖音的主页链接：请创办人在 App 里打开自己的主页 → 分享 → 复制链接，拿到后在 `src/site.json` 对应平台加 `"url"`。视频号没有网页版主页，只能保留「在微信搜索」，或改放她的视频号二维码图片。
 5. 只有 YouTube 内容自动同步（2026-11-09 确认）；邮箱、各平台账号、简介都是手动更新。
+6. **自动更新改为访客打开时生成（2026-11-10 上线）**：`/` 由 Vercel Function `api/home.mjs` 生成，Vercel CDN 缓存 10 分钟（上线时实测第一次 `MISS`、第二次 `HIT`）。读 YouTube 失败时回传部署时生成的备用页 `fallback/index.html`，60 秒后再试。规格见 spec 第 11 节，计划 `docs/superpowers/plans/2026-11-10-live-render.md`。
+7. 请创办人在她 YouTube 频道的「链接」里加上 `https://shenstudio.tv`（项目负责人会转告，2026-11-10）。
 
 ## 正式上线（网域 shenstudio.tv）
 
-网域在 Namecheap（账号 cici0416），网址主机是 Vercel 团队「ShenStudio」的项目 `shenstudio-site`。主网址用 **www.shenstudio.tv**（Vercel 推荐），`shenstudio.tv` 308 转到 www。
+网域在 Namecheap（账号 cici0416），网址主机是 Vercel 团队「ShenStudio」的项目 `shenstudio-site`。主网址用 **shenstudio.tv**（她买的就是这个，2026-11-10 由 www 改过来），`www.shenstudio.tv` 308 转到它。
 
 1. **连接网域**
    - 已完成（2026-11-09）：Vercel → **Settings** → **Domains** 加了 `shenstudio.tv`（转到 www）和 `www.shenstudio.tv`（Production）；Namecheap → **Advanced DNS** 的 `www` CNAME 改为 `a0c271f10c5bf3b5.vercel-dns-017.com.`，`https://www.shenstudio.tv` 已经是新网站（HTTPS）。
-   - `@` 记录：项目负责人把 **URL Redirect Record** 改成 **A Record** `216.198.79.1`（2026-11-10；Claude 改这一笔时被权限系统挡下）。Vercel 两个网域都已通过、SSL 证书已签发，`https://shenstudio.tv` 308 转到 `https://www.shenstudio.tv/`。
+   - `@` 记录：项目负责人把 **URL Redirect Record** 改成 **A Record** `216.198.79.1`（2026-11-10；Claude 改这一笔时被权限系统挡下）。Vercel 两个网域都已通过、SSL 证书已签发。
+   - 2026-11-10 改主网址：Vercel **Domains** 里 `shenstudio.tv` 改为 **Connect to an environment: Production**，`www.shenstudio.tv` 改为 **Redirect to Another Domain: 308 → shenstudio.tv**。DNS 不用动。
    - 不要动 **MAIL SETTINGS**（Private Email）：那是这个网域的邮箱设定，跟网站无关。
-2. **打开收录**：已完成（2026-11-09）。Vercel 环境变量 `SITE_URL=https://www.shenstudio.tv`（**Config** 类型，只设 Production），已重新部署。网页有 canonical、没有 noindex，`/robots.txt` 允许收录，`/sitemap.xml` 已生成。预览版没有 `SITE_URL`，仍然不收录。
-   - 在 Vercel 网页上按 **Redeploy** 会要求寄验证码到 shenstudio.ai@gmail.com 验证身份；不想收验证码时，到 GitHub → **Actions** → **Rebuild site** → **Run workflow** 也能重新部署。
-3. **验证**：把 `https://www.shenstudio.tv` 贴到微信 / WhatsApp 确认分享卡片显示正常。
-4. **提交给 Google**：到 Google Search Console 添加网站，提交 `https://www.shenstudio.tv/sitemap.xml`。用 Domain 方式验证要在 Namecheap 加一条 TXT 记录（Search Console 会给值）。需要决定用谁的 Google 账号。
+2. **打开收录**：已完成。Vercel 环境变量 `SITE_URL=https://shenstudio.tv`（**Config** 类型，只设 Production；2026-11-10 从 www 改过来）。上线检查：canonical 为 `https://shenstudio.tv/`、没有 noindex，`/robots.txt` 允许收录并指向 sitemap，`/sitemap.xml` 已生成。预览版没有 `SITE_URL`，仍然不收录。
+   - 在 Vercel 网页上按 **Redeploy**、或查看 / 修改环境变量的值，会要求输入寄到 shenstudio.ai@gmail.com 的验证码（由项目负责人输入）。只想重新部署时，到 GitHub → **Actions** → **Rebuild site** → **Run workflow** 不需要验证码。
+3. **验证**：把 `https://shenstudio.tv` 贴到微信 / WhatsApp 确认分享卡片显示正常。
+4. **提交给 Google**：暂时不做（项目负责人 2026-11-10 决定，需要时再说）。届时到 Google Search Console 添加网站，提交 `https://shenstudio.tv/sitemap.xml`；用 Domain 方式验证要在 Namecheap 加一条 TXT 记录。
 5. **上线前检查**：
    - Vercel 免费的 Hobby 方案限非商业用途，这是公司的营销网站，考虑升级 Pro。
    - Vercel 账户与 GitHub 仓库目前在项目负责人名下，之后想把所有权交给创办人，可以把 GitHub 仓库和 Vercel 项目转移过去。
@@ -56,7 +59,7 @@
 - **改栏目、邮箱、平台账号、简介**：都在 `src/site.json`，改完 commit 推上去即可（推到 `main` 会自动部署）。格式写错时 build 会报出是哪一项。
 - **定时更新**：GitHub Actions 每 3 小时触发一次 Vercel Deploy Hook；每月 1 日自动提交一次 `.github/keepalive`，GitHub 就不会因 60 天没动静而暂停定时任务。
 - **Deploy Hook 网址**是「触发部署的密码」，只存在 GitHub 的 Secrets（`VERCEL_DEPLOY_HOOK`），不要贴到别处。
-- **YouTube API 读不到**（key 失效、额度用完、网络问题）时，那次部署会失败，网站继续显示上一个好的版本。到 Vercel 的部署记录看错误讯息；要换 key 见上方第 1 条的步骤。
+- **YouTube API 读不到**（key 失效、额度用完、网络问题）时：访客看到的是部署时生成的备用页（内容停在上次部署时），错误记在 Vercel 项目的 **Logs**；部署本身也会失败，Vercel 继续用上一个好的版本。要换 key 见上方第 1 条的步骤。每次生成首页约用 4 个额度单位，免费额度每天 10,000。
 - 要调整更新频率：改 `.github/workflows/rebuild.yml` 里的 `*/3`。
 - 她换了 YouTube banner：把新图交给 Claude 重新裁切（流程写在 `CLAUDE.md`）。
 - 分享图标目前来自正式 logo 的 3544px 原档，之后如果创办人提供矢量档（SVG / AI），可以重新生成更清晰的图标。
