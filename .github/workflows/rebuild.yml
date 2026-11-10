@@ -1,10 +1,20 @@
-# Rebuilds the site every 3 hours so new Podbean episodes / YouTube videos appear on their own.
+# Rebuilds the site every 3 hours so new YouTube videos appear on their own.
 # It only pings a Vercel Deploy Hook; Vercel then runs `node scripts/build.mjs` (see vercel.json).
+# GitHub pauses scheduled workflows in a repository with no activity for 60 days, so on the 1st of each
+# month the keepalive job commits a timestamp to .github/keepalive; that push counts as activity.
 name: Rebuild site
 on:
   schedule:
     - cron: "17 */3 * * *"
+    - cron: "41 9 1 * *"
   workflow_dispatch:
+    inputs:
+      keepalive:
+        description: "Also commit the keepalive timestamp"
+        type: boolean
+        default: false
+permissions:
+  contents: write
 jobs:
   ping:
     runs-on: ubuntu-latest
@@ -15,3 +25,16 @@ jobs:
         run: |
           if [ -z "$HOOK" ]; then echo "Secret VERCEL_DEPLOY_HOOK is not set"; exit 1; fi
           curl -fsS -X POST "$HOOK"
+  keepalive:
+    if: github.event.schedule == '41 9 1 * *' || inputs.keepalive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Commit a timestamp so the schedule is never paused
+        run: |
+          date -u +%Y-%m-%dT%H:%M:%SZ > .github/keepalive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive
+          git commit -m "Keep the scheduled rebuild alive"
+          git push
