@@ -147,8 +147,9 @@ export function seoHead(config, { siteUrl = '', assetBase = '' } = {}) {
     ],
   };
   const meta = (attr, key, val) => `<meta ${attr}="${key}" content="${esc(val)}">`;
+  const title = config.pageTitle || config.siteName;
   return [
-    `<title>${esc(config.siteName)}</title>`,
+    `<title>${esc(title)}</title>`,
     meta('name', 'description', config.description),
     siteUrl ? `<link rel="canonical" href="${esc(siteUrl)}/">` : '<meta name="robots" content="noindex, nofollow">',
     '<link rel="icon" type="image/png" href="/favicon.png">',
@@ -156,7 +157,7 @@ export function seoHead(config, { siteUrl = '', assetBase = '' } = {}) {
     meta('property', 'og:type', 'website'),
     meta('property', 'og:site_name', config.siteName),
     meta('property', 'og:locale', 'zh_CN'),
-    meta('property', 'og:title', config.siteName),
+    meta('property', 'og:title', title),
     meta('property', 'og:description', config.description),
     ...(siteUrl ? [meta('property', 'og:url', `${siteUrl}/`)] : []),
     meta('property', 'og:image', `${assetBase}/og.jpg`),

@@ -84,6 +84,14 @@ test('renderConnect links platforms that have a URL and shows the others as text
   assert.throws(() => renderConnect({ ...config, platforms: [{ name: 'X', handle: 'x', icon: 'nope' }] }, icons), /icons\.json has no icon "nope"/);
 });
 
+test('seoHead uses pageTitle for <title> and og:title, falling back to siteName', () => {
+  const withTitle = seoHead({ ...config, pageTitle: '大道传媒 Shen Studio｜沈琛琛' }, {});
+  assert.ok(withTitle.includes('<title>大道传媒 Shen Studio｜沈琛琛</title>'));
+  assert.ok(withTitle.includes('<meta property="og:title" content="大道传媒 Shen Studio｜沈琛琛">'));
+  assert.ok(withTitle.includes('<meta property="og:site_name" content="大道传媒 Shen Studio">'));
+  assert.ok(seoHead(config, {}).includes('<title>大道传媒 Shen Studio</title>'));
+});
+
 test('seoHead is noindex without SITE_URL and canonical with it', () => {
   assert.ok(seoHead(config, {}).includes('<meta name="robots" content="noindex, nofollow">'));
   const live = seoHead(config, { siteUrl: 'https://example.com', assetBase: 'https://example.com' });
