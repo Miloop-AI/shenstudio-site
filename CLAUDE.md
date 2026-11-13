@@ -10,7 +10,7 @@ The design spec for the current site is `docs/superpowers/specs/2026-11-09-youtu
 
 **What's still to do** lives in `docs/next-steps.md`; read it at the start of a session and keep it current.
 
-**Git identity:** commit and push as the GitHub account `miloopai` (not `ying2sun`). This repo's local git config already sets `user.name=miloopai`, the no-reply email `309224103+miloopai@users.noreply.github.com` and the credential username; the owner signs `miloopai` into Git Credential Manager themselves. Commits before 2026-09-23 evening are authored as `ying2sun` and are left as they are.
+**Git identity:** commit and push as the GitHub account `shenstudio-mi` (since 2026-11-12; not `miloopai`, not `ying2sun`). It is the GitHub account linked to the ShenStudio Vercel account, which is on the Hobby plan, and Hobby only deploys commits whose author is the account owner. `miloopai` is linked to Miloop's own Vercel instead, because a GitHub account can be linked to only one Vercel account. `shenstudio-mi` is an outside collaborator (Write) on `Miloop-AI/shenstudio-site`. This repo's local git config sets `user.name=shenstudio-mi`, the no-reply email `356065941+shenstudio-mi@users.noreply.github.com` and the credential username; the owner signs `shenstudio-mi` into Git Credential Manager themselves. Earlier commits are authored as `miloopai` (2026-09-23 evening to 2026-11-12) or `ying2sun` (before that) and are left as they are.
 
 **Console instructions:** when telling the owner what to click in Google Cloud, Vercel, GitHub, AWS and the like, quote the English UI labels.
 
